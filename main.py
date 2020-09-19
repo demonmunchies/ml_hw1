@@ -16,6 +16,8 @@ def my_k_means(num_clusters, data):
 	# Initialize cluster sets
 	cluster_labels = [-1 for _ in range(len(data))]
 
+	prev_cost = 0
+
 	# Repeat
 	while True:
 
@@ -51,36 +53,21 @@ def my_k_means(num_clusters, data):
 				# print('Empty cluster detected, crashing gracefully!')
 
 		# Check 'stability'
-		cluster_center_delta = 0
 
-		for i in range(num_clusters):
-			calc_dist = euclidean_distance(cluster_centers[i], upd_cluster_centers[i])
-			cluster_center_delta = cluster_center_delta + calc_dist
-
-		cluster_centers = upd_cluster_centers
-
-		if cluster_center_delta < .001:
-			break
-		elif cluster_center_delta != cluster_center_delta:
-			print("Anxiety!")
+		cost = 0
+		for i in range(len(data)):
+			eucl_dist = euclidean_distance(data[i], cluster_centers[cluster_labels[i]])
+			cost = cost + eucl_dist
+		cost = cost / len(data)
+	
+		if (abs(prev_cost - cost) / cost) < .001:
 			break
 
-	cost = 0
-	for i in range(len(data)):
-		eucl_dist = euclidean_distance(data[i], cluster_centers[cluster_labels[i]])
-		cost = cost + eucl_dist
-	cost = cost / len(data)
+		# print((abs(prev_cost - cost) / cost))
+
+		prev_cost = cost
 
 	return cluster_labels, cost, cluster_centers
-
-
-
-
-
-
-
-
-
 
 # Fuzzy C Implementation
 def my_fuzzy_c(num_clusters, data, m):
@@ -150,9 +137,6 @@ def my_fuzzy_c(num_clusters, data, m):
 
 	return mem_mat, cost, cluster_centers
 
-
-
-
 def list_tuple_generator(dimensionality, val=None):
 	t = []
 	for x in range(dimensionality):
@@ -187,18 +171,49 @@ def k_means_execution(data, num_clusters, iters):
 		if cost_lst[i] < min_val:
 			counter = i
 
-	# print(cost_lst)
 	clust_label = cluster_labels_lst[counter]
 
-	data_x = [i for i, j, k in data]
-	data_y = [j for i, j, k in data]
-	data_z = [k for i, j, k in data]
-	color = ['red' if x == 0 else 'orange' if x == 1 else 'yellow' if x ==2 else 'green' if x ==3 else 'blue' if x ==4  else 'black' for x in clust_label]
+	return clus_cent_lst[counter], clust_label
 
-	ax = plt.axes(projection ="3d")
+	# data_x = [i for i, j, k in data]
+	# data_y = [j for i, j, k in data]
+	# data_z = [k for i, j, k in data]
+	# color = ['red' if x == 0 else 'orange' if x == 1 else 'yellow' if x ==2 else 'green' if x ==3 else 'blue' if x ==4  else 'black' for x in clust_label]
 
-	ax.scatter(data_x, data_y, data_z, c=color)
-	plt.show()
+	# ax = plt.axes(projection ="3d")
+
+	# ax.scatter(data_x, data_y, data_z, c=color)
+	# plt.show()
+
+def my_dunn_index(cluster_centers, cluster_labels, data):
+
+	diam_lst = []
+	dist_lst = []
+
+	# Calculate diameters of cluster
+	for k in range(len(cluster_centers)):
+		clust_diam_lst = []
+		for x in range(len(data)):
+			for y in range(len(data)):
+				if cluster_labels[x] == cluster_labels[y] and cluster_labels[x] == k:
+					clust_diam_lst.append(euclidean_distance(data[x], data[y]))
+		diam_lst.append(max(clust_diam_lst))
+	max_diam = max(diam_lst)
+
+	# Calculate min distance between points in different clusters
+	for i in range(len(cluster_centers)):
+		for j in range(i+1, len(cluster_centers)):
+			clust_dist_lst = []
+			for x in range(len(data)):
+				for y in range(len(data)):
+					if cluster_labels[x] == i and cluster_labels[y] == j:
+						clust_dist_lst.append(euclidean_distance(data[x], data[y]))
+			dist_lst.append(min(clust_dist_lst))
+	min_dist = min(dist_lst)
+
+	dunn_index = min_dist / max_diam
+
+	return dunn_index
 
 def fuzzy_c_execution(data, num_clusters, m, iters):
 
@@ -222,7 +237,6 @@ def fuzzy_c_execution(data, num_clusters, m, iters):
 	for x in clus_cent_lst[counter]:
 		print(x)
 
-
 def ingest(filename, drop_fields):
 	df = pandas.read_csv(filename, usecols=drop_fields)
 	df = df.apply(lambda x: x/x.max(), axis=0)
@@ -236,4 +250,6 @@ def ingest(filename, drop_fields):
 
 data = ingest('Assignment1_data.csv', ['Risk', 'NoFaceContact', 'Sick'])
 # k_means_execution(data, 2, 500)
-fuzzy_c_execution(data, 5, 2, 50)
+# fuzzy_c_execution(data, 5, 2, 50)
+cluster_centers, cluster_labels = k_means_execution(data, 2, 5000)
+print(my_dunn_index(cluster_centers, cluster_labels, data))
