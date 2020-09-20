@@ -10,8 +10,14 @@ def my_k_means(num_clusters, data):
 
 	# Initialize cluster starting locations (random)
 	cluster_centers = []
+	ind_lst = []
 	for i in range(num_clusters):
-		cluster_centers.append(list_tuple_generator(len(data[0])))
+		ind = int(random() * len(data))
+		while(ind in index_lst):
+			ind = int(random() * len(data))
+		ind_lst.append(ind)
+		cluster_centers.append(data[ind])
+
 
 	# Initialize cluster sets
 	cluster_labels = [-1 for _ in range(len(data))]
@@ -173,7 +179,7 @@ def k_means_execution(data, num_clusters, iters):
 
 	clust_label = cluster_labels_lst[counter]
 
-	return clus_cent_lst[counter], clust_label
+	return clus_cent_lst[counter], clust_label, cost_lst[counter]
 
 	# data_x = [i for i, j, k in data]
 	# data_y = [j for i, j, k in data]
@@ -251,5 +257,27 @@ def ingest(filename, drop_fields):
 data = ingest('Assignment1_data.csv', ['Risk', 'NoFaceContact', 'Sick'])
 # k_means_execution(data, 2, 500)
 # fuzzy_c_execution(data, 5, 2, 50)
-cluster_centers, cluster_labels = k_means_execution(data, 2, 5000)
-print(my_dunn_index(cluster_centers, cluster_labels, data))
+
+cost_lst = []
+index_lst = []
+
+for i in range(100):
+	try:
+		# print(i)
+		cluster_centers, cluster_labels, cost = k_means_execution(data, 5, 500)
+		index = my_dunn_index(cluster_centers, cluster_labels, data)
+		cost_lst.append(cost)
+		index_lst.append(index)
+	except:
+		# print('###################################')
+		# print('Some error occured.')
+		# print(cost)
+		# print(cluster_centers)
+		# print(cluster_labels)
+		# print('###################################')
+		error = -1
+
+plt.scatter(cost_lst, index_lst)
+plt.show()
+
+
